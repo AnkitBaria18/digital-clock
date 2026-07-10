@@ -8,7 +8,6 @@
   :root{
     --bg:#0b1220;
     --card:#fff;
-    --accent:#ff7a7a;
     --muted:#6b7788;
     --glass: rgba(255,255,255,0.98);
     --shadow: 0 10px 30px rgba(2,6,23,0.5);
@@ -16,24 +15,19 @@
   }
   *{box-sizing:border-box}
   html,body{height:100%;margin:0;background:linear-gradient(160deg,var(--bg),#11293b);color:var(--card);-webkit-font-smoothing:antialiased}
-  .app{
-    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
-  }
-  .panel{
-    width:min(1100px,100%); max-width:1100px; background:linear-gradient(180deg,#ffffffee,#fbfdff); color:#041826;
-    border-radius:14px; padding:16px; box-shadow:var(--shadow);
-  }
+  .app{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px}
+  .panel{width:min(1100px,100%); max-width:1100px; background:linear-gradient(180deg,#ffffffee,#fbfdff); color:#041826; border-radius:14px; padding:16px; box-shadow:var(--shadow)}
 
   header{display:flex;align-items:center;gap:12px;justify-content:space-between}
   .brand{display:flex;gap:12px;align-items:center}
-  .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7b5cff);color:white;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#FF6F00,#7b5cff);color:white;display:flex;align-items:center;justify-content:center;font-weight:800}
   h1{font-size:16px;margin:0}
   .sub{color:var(--muted);font-size:13px;font-weight:700}
 
   .controls{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
   .toggle{display:inline-flex;align-items:center;gap:8px}
   .btn{background:transparent;border:0;padding:8px 12px;border-radius:10px;font-weight:800;color:var(--muted);cursor:pointer}
-  .primary{background:linear-gradient(90deg,var(--accent),#7b5cff);color:white;border:0}
+  .primary{background:linear-gradient(90deg,#7b5cff,#ff6b6b);color:white;border:0}
 
   .add-row{display:flex;gap:8px;align-items:center}
   input[type="search"], select{padding:8px 10px;border-radius:10px;border:1px solid rgba(4,21,38,0.06);width:260px}
@@ -42,17 +36,18 @@
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px}
   .card{
     --accent-color: #7b5cff; /* fallback */
-    background:linear-gradient(180deg,#fff,#fbfdff); border-radius:12px; padding:12px; box-shadow:0 6px 20px rgba(2,6,23,0.06);
+    background:linear-gradient(180deg,#fff,#fbfdff);
+    border-radius:12px; padding:12px; box-shadow:0 6px 20px rgba(2,6,23,0.06);
     min-height:86px; display:flex;flex-direction:column; gap:8px; justify-content:center;
     position:relative; overflow:hidden; border-left:6px solid var(--accent-color); padding-left:12px;
   }
 
-  /* Per-zone color classes (5 colors) */
-  .tzc-0{ --accent-color: #ff6b6b; }
-  .tzc-1{ --accent-color: #7b5cff; }
-  .tzc-2{ --accent-color: #2ecc71; }
-  .tzc-3{ --accent-color: #ffb84d; }
-  .tzc-4{ --accent-color: #19a7ff; }
+  /* Bold palette for five zones */
+  .tzc-0{ --accent-color: #FF6F00; } /* India - saffron/orange */
+  .tzc-1{ --accent-color: #FF2D55; } /* vivid pink/red */
+  .tzc-2{ --accent-color: #5E2DFF; } /* vivid purple */
+  .tzc-3{ --accent-color: #00C853; } /* vivid green */
+  .tzc-4{ --accent-color: #0091EA; } /* vivid blue */
 
   .tz-name{font-weight:900;font-size:14px;color:var(--accent-color)}
   .tz-sub{color:var(--muted);font-weight:700;font-size:13px}
@@ -65,11 +60,7 @@
   footer{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
   .muted-note{color:var(--muted);font-weight:700;font-size:13px}
 
-  @media (max-width:520px){
-    .logo{width:40px;height:40px;font-size:13px}
-    input[type="search"], select{width:160px}
-    .time{font-size:22px}
-  }
+  @media (max-width:520px){.logo{width:40px;height:40px;font-size:13px} input[type="search"], select{width:160px} .time{font-size:22px}}
 </style>
 </head>
 <body>
@@ -114,26 +105,31 @@
 
 <script>
 (function(){
-  // Defaults: Main US time zones + Delhi (Asia/Kolkata)
+  // Defaults: put India first, then main US time zones
   const defaultZones = [
+    'Asia/Kolkata',          // India (top)
     'America/New_York',      // Eastern
     'America/Chicago',       // Central
     'America/Denver',        // Mountain
-    'America/Los_Angeles',   // Pacific
-    'Asia/Kolkata'           // Delhi / India
+    'America/Los_Angeles'    // Pacific
   ];
 
-  // Try to get a list of available time zones (modern engines)
+  // Deterministic mapping: ensure these zones always get the bold colors above
+  const zoneColorClass = {
+    'Asia/Kolkata': 'tzc-0',
+    'America/New_York': 'tzc-1',
+    'America/Chicago': 'tzc-2',
+    'America/Denver': 'tzc-3',
+    'America/Los_Angeles': 'tzc-4'
+  };
+
+  // Try to get a list of available time zones
   let allZones = [];
   if (typeof Intl === 'object' && typeof Intl.supportedValuesOf === 'function') {
     try { allZones = Intl.supportedValuesOf('timeZone'); } catch(e) { allZones = []; }
   }
-  // Fallback small curated list if not available
   if(!allZones || allZones.length === 0) {
-    allZones = [
-      'UTC','Europe/London','Europe/Berlin','Europe/Paris','America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
-      'Asia/Tokyo','Asia/Shanghai','Asia/Kolkata','Asia/Dubai','Australia/Sydney','Pacific/Auckland','Africa/Johannesburg'
-    ];
+    allZones = ['UTC','Europe/London','Europe/Berlin','America/New_York','America/Chicago','America/Denver','America/Los_Angeles','Asia/Kolkata'];
   }
 
   const zoneGrid = document.getElementById('zoneGrid');
@@ -144,177 +140,74 @@
   const hourToggle = document.getElementById('hourToggle');
   const nowLocal = document.getElementById('nowLocal');
 
-  // load saved zones or use defaults (now includes the full default set)
   const STORAGE_KEY = 'multi-tz-zones-v1';
   let zones = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
   if(!Array.isArray(zones) || zones.length === 0) {
-    zones = defaultZones.slice(); // use the full default set
+    zones = defaultZones.slice();
+  } else {
+    // if zones exist, ensure India is visible at top by moving it to front if present
+    const idx = zones.indexOf('Asia/Kolkata');
+    if(idx > 0){ zones.splice(idx,1); zones.unshift('Asia/Kolkata'); persist(); }
   }
 
-  // Populate datalist for search
-  function populateDatalist() {
-    tzList.innerHTML = '';
-    allZones.forEach(tz=>{
-      const opt = document.createElement('option'); opt.value = tz;
-      tzList.appendChild(opt);
-    });
-  }
+  function populateDatalist(){ tzList.innerHTML=''; allZones.forEach(tz=>{ const opt=document.createElement('option'); opt.value=tz; tzList.appendChild(opt); }); }
   populateDatalist();
 
-  // Utility: get date parts for a timezone using formatToParts
-  function getZonedParts(timeZone, date = new Date()) {
-    // Use en-US as stable digits formatting
-    const fmt = new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      year:'numeric', month:'2-digit', day:'2-digit',
-      hour:'2-digit', minute:'2-digit', second:'2-digit',
-      hour12:false
-    });
+  function getZonedParts(timeZone, date = new Date()){
+    const fmt = new Intl.DateTimeFormat('en-US',{ timeZone, year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
     const parts = fmt.formatToParts(date).reduce((acc,p)=>{ acc[p.type]=p.value; return acc; }, {});
-    return {
-      year: +parts.year,
-      month: +parts.month,
-      day: +parts.day,
-      hour: +parts.hour,
-      minute: +parts.minute,
-      second: +parts.second
-    };
+    return { year:+parts.year, month:+parts.month, day:+parts.day, hour:+parts.hour, minute:+parts.minute, second:+parts.second };
   }
 
-  // Compute offset string like GMT+05:30
-  function computeOffsetString(tz, date = new Date()){
-    // Build UTC timestamp from the zone's wall-clock parts and compare with current timestamp
-    const parts = getZonedParts(tz, date);
-    const tzUtcMs = Date.UTC(parts.year, parts.month-1, parts.day, parts.hour, parts.minute, parts.second);
+  function computeOffsetString(tz, date=new Date()){
+    const parts = getZonedParts(tz,date);
+    const tzUtcMs = Date.UTC(parts.year,parts.month-1,parts.day,parts.hour,parts.minute,parts.second);
     const nowMs = date.getTime();
-    const diffMinutes = Math.round((nowMs - tzUtcMs) / 60000); // now - tzUtc
-    // timezone offset relative to UTC in minutes (negative for UTC-)
-    const offsetMinutes = -diffMinutes;
-    const sign = offsetMinutes >= 0 ? '+' : '-';
-    const abs = Math.abs(offsetMinutes);
-    const hh = String(Math.floor(abs/60)).padStart(2,'0');
-    const mm = String(abs % 60).padStart(2,'0');
-    return `GMT${sign}${hh}:${mm}`;
+    const diffMinutes = Math.round((nowMs - tzUtcMs)/60000);
+    const offsetMinutes = -diffMinutes; const sign = offsetMinutes>=0?'+':'-'; const abs=Math.abs(offsetMinutes);
+    return `GMT${sign}${String(Math.floor(abs/60)).padStart(2,'0')}:${String(abs%60).padStart(2,'0')}`;
   }
 
-  // Format live time for display (using locale formatting for numbers)
-  function formatTime(tz, date=new Date(), use24=false) {
-    const opts = {
-      timeZone: tz,
-      hour: 'numeric', minute:'2-digit', second:'2-digit',
-      hour12: !use24
-    };
-    return new Intl.DateTimeFormat(undefined, opts).format(date);
-  }
-  function formatDate(tz,date=new Date()){
-    return new Intl.DateTimeFormat(undefined, {timeZone:tz, weekday:'short', year:'numeric', month:'short', day:'numeric'}).format(date);
-  }
+  function formatTime(tz,date=new Date(),use24=false){ return new Intl.DateTimeFormat(undefined,{ timeZone:tz, hour:'numeric', minute:'2-digit', second:'2-digit', hour12:!use24 }).format(date); }
+  function formatDate(tz,date=new Date()){ return new Intl.DateTimeFormat(undefined,{ timeZone:tz, weekday:'short', year:'numeric', month:'short', day:'numeric' }).format(date); }
 
-  // Render functions
-  function renderAll(){
-    zoneGrid.innerHTML = '';
-    zones.forEach(zone => {
-      zoneGrid.appendChild(renderCard(zone));
-    });
-  }
+  function renderAll(){ zoneGrid.innerHTML=''; zones.forEach(zone=> zoneGrid.appendChild(renderCard(zone)) ); }
 
   function renderCard(zone){
-    const card = document.createElement('article');
-    // compute an index-based color for this zone (so the five default zones get five colors)
-    const idx = zones.indexOf(zone) >= 0 ? (zones.indexOf(zone) % 5) : 0;
-    card.className = 'card tzc-' + idx;
-    card.setAttribute('role','region');
-    card.setAttribute('aria-label', `Clock for ${zone}`);
+    const card=document.createElement('article');
+    const cls = zoneColorClass[zone] || ('tzc-' + (zones.indexOf(zone)>=0? (zones.indexOf(zone)%5):0));
+    card.className = 'card ' + cls;
+    card.setAttribute('role','region'); card.setAttribute('aria-label', `Clock for ${zone}`);
 
-    const controls = document.createElement('div');
-    controls.className = 'controls-small';
-    const removeBtn = document.createElement('button');
-    removeBtn.className = 'x-btn'; removeBtn.title = 'Remove zone'; removeBtn.innerHTML = '✕';
-    removeBtn.addEventListener('click', ()=>{ removeZone(zone); });
-    controls.appendChild(removeBtn);
+    const controls=document.createElement('div'); controls.className='controls-small';
+    const removeBtn=document.createElement('button'); removeBtn.className='x-btn'; removeBtn.title='Remove zone'; removeBtn.innerHTML='✕';
+    removeBtn.addEventListener('click', ()=>{ removeZone(zone); }); controls.appendChild(removeBtn);
 
-    const name = document.createElement('div'); name.className='tz-name'; name.textContent = zone;
-    const sub = document.createElement('div'); sub.className='tz-sub'; sub.textContent = computeOffsetString(zone);
-    const timeEl = document.createElement('div'); timeEl.className='time'; timeEl.textContent = formatTime(zone, new Date(), hourToggle.checked);
-    const dateEl = document.createElement('div'); dateEl.className='small'; dateEl.textContent = formatDate(zone, new Date());
-    // attach current stamp for updates
-    card.dataset.tz = zone;
-    card.appendChild(controls);
-    card.appendChild(name);
-    card.appendChild(sub);
-    card.appendChild(timeEl);
-    card.appendChild(dateEl);
+    const name=document.createElement('div'); name.className='tz-name'; name.textContent = zone;
+    const sub=document.createElement('div'); sub.className='tz-sub'; sub.textContent = computeOffsetString(zone);
+    const timeEl=document.createElement('div'); timeEl.className='time'; timeEl.textContent = formatTime(zone, new Date(), hourToggle.checked);
+    const dateEl=document.createElement('div'); dateEl.className='small'; dateEl.textContent = formatDate(zone, new Date());
+
+    card.dataset.tz = zone; card.appendChild(controls); card.appendChild(name); card.appendChild(sub); card.appendChild(timeEl); card.appendChild(dateEl);
     return card;
   }
 
-  // Update times every 1s
-  function tick(){
-    const now = new Date();
-    // update local "now" display
-    nowLocal.textContent = 'Local: ' + now.toLocaleString(undefined, {hour:'numeric', minute:'2-digit', second:'2-digit', hour12: !hourToggle.checked});
-    document.querySelectorAll('.card').forEach(card=>{
-      const tz = card.dataset.tz;
-      const timeEl = card.querySelector('.time');
-      const dateEl = card.querySelector('.small');
-      const sub = card.querySelector('.tz-sub');
-      if(timeEl) timeEl.textContent = formatTime(tz, now, hourToggle.checked);
-      if(dateEl) dateEl.textContent = formatDate(tz, now);
-      if(sub) sub.textContent = computeOffsetString(tz, now);
-    });
-  }
+  function tick(){ const now=new Date(); nowLocal.textContent='Local: ' + now.toLocaleString(undefined,{ hour:'numeric', minute:'2-digit', second:'2-digit', hour12: !hourToggle.checked }); document.querySelectorAll('.card').forEach(card=>{ const tz=card.dataset.tz; const timeEl=card.querySelector('.time'); const dateEl=card.querySelector('.small'); const sub=card.querySelector('.tz-sub'); if(timeEl) timeEl.textContent=formatTime(tz,now,hourToggle.checked); if(dateEl) dateEl.textContent=formatDate(tz,now); if(sub) sub.textContent=computeOffsetString(tz,now); }); }
 
-  // Add/remove zones and persist
-  function addZone(zone){
-    if(!zone) return;
-    if(!zones.includes(zone)) {
-      zones.push(zone);
-      persist();
-      renderAll();
-      tick();
-    }
-  }
-  function removeZone(zone){
-    zones = zones.filter(z=>z!==zone);
-    persist();
-    renderAll();
-  }
+  function addZone(zone){ if(!zone) return; if(!zones.includes(zone)){ zones.push(zone); persist(); renderAll(); tick(); } }
+  function removeZone(zone){ zones = zones.filter(z=>z!==zone); persist(); renderAll(); }
   function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(zones)); }
 
-  // Bind UI
-  addBtn.addEventListener('click', ()=> {
-    const val = tzSearch.value.trim();
-    if(val) addZone(val);
-    tzSearch.value = '';
-  });
-  tzSearch.addEventListener('keydown', (e)=> { if(e.key === 'Enter'){ addBtn.click(); } });
+  addBtn.addEventListener('click', ()=>{ const val = tzSearch.value.trim(); if(val) addZone(val); tzSearch.value=''; });
+  tzSearch.addEventListener('keydown', (e)=>{ if(e.key==='Enter') addBtn.click(); });
+  addSample.addEventListener('click', ()=>{ defaultZones.forEach(z=>addZone(z)); });
+  hourToggle.addEventListener('change', ()=>{ tick(); });
 
-  addSample.addEventListener('click', ()=> {
-    defaultZones.forEach(z=>addZone(z));
-  });
+  renderAll(); tick(); setInterval(tick,1000);
 
-  hourToggle.addEventListener('change', ()=> { tick(); });
+  document.addEventListener('keydown',(e)=>{ if(e.key==='Delete'){ const active=document.activeElement; const card=active && active.closest && active.closest('.card'); if(card){ const tz=card.dataset.tz; if(tz) removeZone(tz); } } });
 
-  // init render
-  renderAll();
-  tick();
-  // run tick every second
-  setInterval(tick, 1000);
-
-  // keyboard accessibility: remove with Delete key when focused on card
-  document.addEventListener('keydown', (e)=>{
-    if(e.key === 'Delete'){
-      const active = document.activeElement;
-      const card = active && active.closest && active.closest('.card');
-      if(card) {
-        const tz = card.dataset.tz;
-        if(tz) removeZone(tz);
-      }
-    }
-  });
-
-  // expose small helper for dev console
   window._MultiTZ = { addZone, removeZone, zones };
-
 })();
 </script>
 </body>
