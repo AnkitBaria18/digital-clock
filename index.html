@@ -106,16 +106,13 @@
 
 <script>
 (function(){
-  // Defaults
+  // Defaults: Main US time zones + Delhi (Asia/Kolkata)
   const defaultZones = [
-    'UTC',
-    'Europe/London',
-    'America/New_York',
-    'America/Los_Angeles',
-    'Asia/Tokyo',
-    'Asia/Kolkata',
-    'Australia/Sydney',
-    'Europe/Berlin'
+    'America/New_York',      // Eastern
+    'America/Chicago',       // Central
+    'America/Denver',        // Mountain
+    'America/Los_Angeles',   // Pacific
+    'Asia/Kolkata'           // Delhi / India
   ];
 
   // Try to get a list of available time zones (modern engines)
@@ -139,11 +136,11 @@
   const hourToggle = document.getElementById('hourToggle');
   const nowLocal = document.getElementById('nowLocal');
 
-  // load saved zones or use defaults
+  // load saved zones or use defaults (now includes the full default set)
   const STORAGE_KEY = 'multi-tz-zones-v1';
   let zones = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
   if(!Array.isArray(zones) || zones.length === 0) {
-    zones = defaultZones.slice(0,6);
+    zones = defaultZones.slice(); // use the full default set
   }
 
   // Populate datalist for search
