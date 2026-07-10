@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Multi Timezone Digital Clock</title>
+<style>
+  :root{
+    --bg:#0b1220;
+    --card:#fff;
+    --accent:#ff7a7a;
+    --muted:#6b7788;
+    --glass: rgba(255,255,255,0.98);
+    --shadow: 0 10px 30px rgba(2,6,23,0.5);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;background:linear-gradient(160deg,var(--bg),#11293b);color:var(--card);-webkit-font-smoothing:antialiased}
+  .app{
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .panel{
+    width:min(1100px,100%); max-width:1100px; background:linear-gradient(180deg,#ffffffee,#fbfdff); color:#041826;
+    border-radius:14px; padding:16px; box-shadow:var(--shadow);
+  }
+
+  header{display:flex;align-items:center;gap:12px;justify-content:space-between}
+  .brand{display:flex;gap:12px;align-items:center}
+  .logo{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7b5cff);color:white;display:flex;align-items:center;justify-content:center;font-weight:800}
+  h1{font-size:16px;margin:0}
+  .sub{color:var(--muted);font-size:13px;font-weight:700}
+
+  .controls{display:flex;gap:12px;align-items:center;margin-top:12px;flex-wrap:wrap}
+  .toggle{display:inline-flex;align-items:center;gap:8px}
+  .btn{background:transparent;border:0;padding:8px 12px;border-radius:10px;font-weight:800;color:var(--muted);cursor:pointer}
+  .primary{background:linear-gradient(90deg,var(--accent),#7b5cff);color:white;border:0}
+
+  .add-row{display:flex;gap:8px;align-items:center}
+  input[type="search"], select{padding:8px 10px;border-radius:10px;border:1px solid rgba(4,21,38,0.06);width:260px}
+  .timezone-add{display:flex;gap:8px;align-items:center}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px}
+  .card{
+    background:linear-gradient(180deg,#fff,#fbfdff); border-radius:12px; padding:12px; box-shadow:0 6px 20px rgba(2,6,23,0.06);
+    min-height:86px; display:flex;flex-direction:column; gap:8px; justify-content:center;
+    position:relative; overflow:hidden;
+  }
+
+  .tz-name{font-weight:900;font-size:14px}
+  .tz-sub{color:var(--muted);font-weight:700;font-size:13px}
+  .time{font-weight:900;font-size:28px;letter-spacing:0.5px}
+  .small{font-size:12px;color:var(--muted);font-weight:800}
+
+  .card .controls-small{position:absolute;right:8px;top:8px;display:flex;gap:6px}
+  .x-btn{background:transparent;border:0;color:var(--muted);padding:6px;border-radius:8px;cursor:pointer}
+
+  footer{margin-top:14px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .muted-note{color:var(--muted);font-weight:700;font-size:13px}
+
+  @media (max-width:520px){
+    .logo{width:40px;height:40px;font-size:13px}
+    input[type="search"], select{width:160px}
+    .time{font-size:22px}
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <main class="panel" role="main" aria-labelledby="title">
+      <header>
+        <div class="brand">
+          <div class="logo">TZ</div>
+          <div>
+            <h1 id="title">Multi Timezone Clock</h1>
+            <div class="sub">Live digital clocks across time zones — add, remove, and switch 12/24h</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="toggle" title="Toggle 12/24 hour">
+            <label class="small">24h</label>
+            <input type="checkbox" id="hourToggle" aria-label="Toggle 24 hour">
+          </div>
+          <button class="btn primary" id="addSample">Add Common Zones</button>
+        </div>
+      </header>
+
+      <div class="controls" aria-hidden="false">
+        <div class="timezone-add" role="form" aria-label="Add timezone">
+          <input id="tzSearch" list="tzList" type="search" placeholder="Search timezone (e.g. Europe/London)" aria-label="Search timezone" />
+          <datalist id="tzList"></datalist>
+          <button class="btn" id="addBtn">Add</button>
+        </div>
+
+        <div style="margin-left:auto" class="small muted-note">Saved zones persist in this browser (localStorage)</div>
+      </div>
+
+      <section class="grid" id="zoneGrid" aria-live="polite"></section>
+
+      <footer>
+        <div class="muted-note">Tip: Tap "Add Common Zones" to quickly add a preset. Click a card's remove (✕) to delete.</div>
+        <div class="small" id="nowLocal"></div>
+      </footer>
+    </main>
+  </div>
+
+<script>
+(function(){
+  // Defaults
+  const defaultZones = [
+    'UTC',
+    'Europe/London',
+    'America/New_York',
+    'America/Los_Angeles',
+    'Asia/Tokyo',
+    'Asia/Kolkata',
+    'Australia/Sydney',
+    'Europe/Berlin'
+  ];
+
+  // Try to get a list of available time zones (modern engines)
+  let allZones = [];
+  if (typeof Intl === 'object' && typeof Intl.supportedValuesOf === 'function') {
+    try { allZones = Intl.supportedValuesOf('timeZone'); } catch(e) { allZones = []; }
+  }
+  // Fallback small curated list if not available
+  if(!allZones || allZones.length === 0) {
+    allZones = [
+      'UTC','Europe/London','Europe/Berlin','Europe/Paris','America/New_York','America/Chicago','America/Denver','America/Los_Angeles',
+      'Asia/Tokyo','Asia/Shanghai','Asia/Kolkata','Asia/Dubai','Australia/Sydney','Pacific/Auckland','Africa/Johannesburg'
+    ];
+  }
+
+  const zoneGrid = document.getElementById('zoneGrid');
+  const tzList = document.getElementById('tzList');
+  const tzSearch = document.getElementById('tzSearch');
+  const addBtn = document.getElementById('addBtn');
+  const addSample = document.getElementById('addSample');
+  const hourToggle = document.getElementById('hourToggle');
+  const nowLocal = document.getElementById('nowLocal');
+
+  // load saved zones or use defaults
+  const STORAGE_KEY = 'multi-tz-zones-v1';
+  let zones = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+  if(!Array.isArray(zones) || zones.length === 0) {
+    zones = defaultZones.slice(0,6);
+  }
+
+  // Populate datalist for search
+  function populateDatalist() {
+    tzList.innerHTML = '';
+    allZones.forEach(tz=>{
+      const opt = document.createElement('option'); opt.value = tz;
+      tzList.appendChild(opt);
+    });
+  }
+  populateDatalist();
+
+  // Utility: get date parts for a timezone using formatToParts
+  function getZonedParts(timeZone, date = new Date()) {
+    // Use en-US as stable digits formatting
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year:'numeric', month:'2-digit', day:'2-digit',
+      hour:'2-digit', minute:'2-digit', second:'2-digit',
+      hour12:false
+    });
+    const parts = fmt.formatToParts(date).reduce((acc,p)=>{ acc[p.type]=p.value; return acc; }, {});
+    return {
+      year: +parts.year,
+      month: +parts.month,
+      day: +parts.day,
+      hour: +parts.hour,
+      minute: +parts.minute,
+      second: +parts.second
+    };
+  }
+
+  // Compute offset string like GMT+05:30
+  function computeOffsetString(tz, date = new Date()){
+    // Build UTC timestamp from the zone's wall-clock parts and compare with current timestamp
+    const parts = getZonedParts(tz, date);
+    const tzUtcMs = Date.UTC(parts.year, parts.month-1, parts.day, parts.hour, parts.minute, parts.second);
+    const nowMs = date.getTime();
+    const diffMinutes = Math.round((nowMs - tzUtcMs) / 60000); // now - tzUtc
+    // timezone offset relative to UTC in minutes (negative for UTC-)
+    const offsetMinutes = -diffMinutes;
+    const sign = offsetMinutes >= 0 ? '+' : '-';
+    const abs = Math.abs(offsetMinutes);
+    const hh = String(Math.floor(abs/60)).padStart(2,'0');
+    const mm = String(abs % 60).padStart(2,'0');
+    return `GMT${sign}${hh}:${mm}`;
+  }
+
+  // Format live time for display (using locale formatting for numbers)
+  function formatTime(tz, date=new Date(), use24=false) {
+    const opts = {
+      timeZone: tz,
+      hour: 'numeric', minute:'2-digit', second:'2-digit',
+      hour12: !use24
+    };
+    return new Intl.DateTimeFormat(undefined, opts).format(date);
+  }
+  function formatDate(tz,date=new Date()){
+    return new Intl.DateTimeFormat(undefined, {timeZone:tz, weekday:'short', year:'numeric', month:'short', day:'numeric'}).format(date);
+  }
+
+  // Render functions
+  function renderAll(){
+    zoneGrid.innerHTML = '';
+    zones.forEach(zone => {
+      zoneGrid.appendChild(renderCard(zone));
+    });
+  }
+
+  function renderCard(zone){
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.setAttribute('role','region');
+    card.setAttribute('aria-label', `Clock for ${zone}`);
+
+    const controls = document.createElement('div');
+    controls.className = 'controls-small';
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'x-btn'; removeBtn.title = 'Remove zone'; removeBtn.innerHTML = '✕';
+    removeBtn.addEventListener('click', ()=>{ removeZone(zone); });
+    controls.appendChild(removeBtn);
+
+    const name = document.createElement('div'); name.className='tz-name'; name.textContent = zone;
+    const sub = document.createElement('div'); sub.className='tz-sub'; sub.textContent = computeOffsetString(zone);
+    const timeEl = document.createElement('div'); timeEl.className='time'; timeEl.textContent = formatTime(zone, new Date(), hourToggle.checked);
+    const dateEl = document.createElement('div'); dateEl.className='small'; dateEl.textContent = formatDate(zone, new Date());
+    // attach current stamp for updates
+    card.dataset.tz = zone;
+    card.appendChild(controls);
+    card.appendChild(name);
+    card.appendChild(sub);
+    card.appendChild(timeEl);
+    card.appendChild(dateEl);
+    return card;
+  }
+
+  // Update times every 1s
+  function tick(){
+    const now = new Date();
+    // update local "now" display
+    nowLocal.textContent = 'Local: ' + now.toLocaleString(undefined, {hour:'numeric', minute:'2-digit', second:'2-digit', hour12: !hourToggle.checked});
+    document.querySelectorAll('.card').forEach(card=>{
+      const tz = card.dataset.tz;
+      const timeEl = card.querySelector('.time');
+      const dateEl = card.querySelector('.small');
+      const sub = card.querySelector('.tz-sub');
+      if(timeEl) timeEl.textContent = formatTime(tz, now, hourToggle.checked);
+      if(dateEl) dateEl.textContent = formatDate(tz, now);
+      if(sub) sub.textContent = computeOffsetString(tz, now);
+    });
+  }
+
+  // Add/remove zones and persist
+  function addZone(zone){
+    if(!zone) return;
+    if(!zones.includes(zone)) {
+      zones.push(zone);
+      persist();
+      renderAll();
+      tick();
+    }
+  }
+  function removeZone(zone){
+    zones = zones.filter(z=>z!==zone);
+    persist();
+    renderAll();
+  }
+  function persist(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(zones)); }
+
+  // Bind UI
+  addBtn.addEventListener('click', ()=> {
+    const val = tzSearch.value.trim();
+    if(val) addZone(val);
+    tzSearch.value = '';
+  });
+  tzSearch.addEventListener('keydown', (e)=> { if(e.key === 'Enter'){ addBtn.click(); } });
+
+  addSample.addEventListener('click', ()=> {
+    defaultZones.forEach(z=>addZone(z));
+  });
+
+  hourToggle.addEventListener('change', ()=> { tick(); });
+
+  // init render
+  renderAll();
+  tick();
+  // run tick every second
+  setInterval(tick, 1000);
+
+  // keyboard accessibility: remove with Delete key when focused on card
+  document.addEventListener('keydown', (e)=>{
+    if(e.key === 'Delete'){
+      const active = document.activeElement;
+      const card = active && active.closest && active.closest('.card');
+      if(card) {
+        const tz = card.dataset.tz;
+        if(tz) removeZone(tz);
+      }
+    }
+  });
+
+  // expose small helper for dev console
+  window._MultiTZ = { addZone, removeZone, zones };
+
+})();
+</script>
+</body>
+</html>
