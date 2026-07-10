@@ -41,14 +41,22 @@
 
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:16px}
   .card{
+    --accent-color: #7b5cff; /* fallback */
     background:linear-gradient(180deg,#fff,#fbfdff); border-radius:12px; padding:12px; box-shadow:0 6px 20px rgba(2,6,23,0.06);
     min-height:86px; display:flex;flex-direction:column; gap:8px; justify-content:center;
-    position:relative; overflow:hidden;
+    position:relative; overflow:hidden; border-left:6px solid var(--accent-color); padding-left:12px;
   }
 
-  .tz-name{font-weight:900;font-size:14px}
+  /* Per-zone color classes (5 colors) */
+  .tzc-0{ --accent-color: #ff6b6b; }
+  .tzc-1{ --accent-color: #7b5cff; }
+  .tzc-2{ --accent-color: #2ecc71; }
+  .tzc-3{ --accent-color: #ffb84d; }
+  .tzc-4{ --accent-color: #19a7ff; }
+
+  .tz-name{font-weight:900;font-size:14px;color:var(--accent-color)}
   .tz-sub{color:var(--muted);font-weight:700;font-size:13px}
-  .time{font-weight:900;font-size:28px;letter-spacing:0.5px}
+  .time{font-weight:900;font-size:28px;letter-spacing:0.5px;color:var(--accent-color)}
   .small{font-size:12px;color:var(--muted);font-weight:800}
 
   .card .controls-small{position:absolute;right:8px;top:8px;display:flex;gap:6px}
@@ -212,7 +220,9 @@
 
   function renderCard(zone){
     const card = document.createElement('article');
-    card.className = 'card';
+    // compute an index-based color for this zone (so the five default zones get five colors)
+    const idx = zones.indexOf(zone) >= 0 ? (zones.indexOf(zone) % 5) : 0;
+    card.className = 'card tzc-' + idx;
     card.setAttribute('role','region');
     card.setAttribute('aria-label', `Clock for ${zone}`);
 
